@@ -1,0 +1,8 @@
+{
+    "json_kValues": [
+        1,
+        2
+    ],
+    "json_pathToMNIST": "mnist",
+    "json_heatmapName": "sns-heatmap.jpg"
+}
