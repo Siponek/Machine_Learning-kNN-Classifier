@@ -1,27 +1,16 @@
-from sklearn.metrics import classification_report
-from sklearn.metrics import accuracy_score
-from sklearn.metrics.pairwise import euclidean_distances
+from sklearn.metrics import classification_report, accuracy_score, euclidean_distances
+from os.path import exists
+from array import array
+
 import matplotlib.pyplot as plt
 import seaborn as sns
 import pandas as pd
 import numpy as np
-from mnist import MNIST
 import json
-
-# TODO     Check that the number of arguments received (nargin) equals at least the number of mandatory arguments
-# / TODO     Classify the test set according to the kNN rule, and return the classification obtained
-# TODO//     If the test set has the optional additional column (nargin == n.mandatory + 1), use this as a target, compute and return the error rate obtained (number of errors / m)
-
-
-# In order to use this program the files specified must be of correct type/name
-# Files must be placed in a folder @{pathToMNIST} and follow naming such as:
-# correct way (no extension is needed) ===> t10k-images-idx3-ubyte
-# INcorrect way                        ===> t10k-images-idx3.ubyte
+import idx2numpy
 
 
 def calculateAccuracy(y_test, y_pred):
-    # y_pred = y_pred.astype(int)
-    # y_pred = y_pred.tolist()
     y_boolDiff = y_test == y_pred
     y_boolDiff = sum(y_boolDiff)
 
@@ -30,34 +19,48 @@ def calculateAccuracy(y_test, y_pred):
 
 def main():
     kValues = []
-
     # Loading config, datasets, k value
     dataConfig = json.load(open(file="./config.jsonc", encoding="utf-8"))
-    mndata = MNIST(dataConfig["json_pathToMNIST"])
     kValues = dataConfig["json_kValues"]
     saveNameHeatmap = dataConfig["json_heatmapName"]
-
+    pathToTrainImages = dataConfig["json_pathToTrainImages"]
+    pathToTrainLabels = dataConfig["json_pathToTrainLabel"]
+    pathToTestImages = dataConfig["json_pathToTestImages"]
+    pathToTestLabels = dataConfig["json_pathToTestLabel"]
     targetPresent = True
 
     # loading datasets into variables and checking for errors
     try:
-        x_train, y_train = mndata.load_training()
-    except:
+        x_train = idx2numpy.convert_from_file(pathToTrainImages)
+        x_train = x_train.reshape([x_train.shape[0], 784])
+
+        y_train = idx2numpy.convert_from_file(pathToTrainLabels)
+
+    except Exception as errorCode:
+        print(errorCode)
         print("Something is wrong with the training set, make sure it follows the naming convention('t10k-images-idx3-ubyte') and both the training set and truth table are present")
         exit("Error while loading train data.\nExiting the program")
 
+    if not exists(pathToTestImages):
+        print(pathToTestImages, "does not exist?")
+        exit("Error while loading train data.\nExiting the program")
+    else:
+        print("Passed image path test")
+
     try:
-        x_test, _ = mndata.load_testing()
+        x_test = idx2numpy.convert_from_file(pathToTestImages)
+        x_test = x_test.reshape([x_test.shape[0], 784])
+
     except Exception as errorCode:
         print(errorCode)
         print("Something is wrong with the xtest set, make sure it follows the naming convention('t10k-images-idx3-ubyte') and the test set is present")
-        exit("Error while loading test data.\nExiting the program")
 
     try:
-        _, y_test = mndata.load_testing()
+        y_test = idx2numpy.convert_from_file(pathToTestLabels)
+
     except Exception as errorCode:
         print(errorCode)
-        print("Something is wrong with the ytest set, make sure it follows the naming convention('t10k-images-idx3-ubyte') and both the test set and truth table are present")
+        print("Something is wrong with the ytest set, make sure it follows the naming convention('t10k-labels-idx3-ubyte') and both the test set and truth table are present")
         print("Continuing without test set truth table")
         targetPresent = False
 
@@ -79,13 +82,15 @@ def main():
     # return(print("Finished tests"))
     print("...Finished tests")
     print("Calculating kNN algorythm for these k parameter values:", kValues)
+    # return 0
+
     y_train = pd.DataFrame(data=y_train)
     x_train = pd.DataFrame(data=x_train)
     distanceMatrix = pd.DataFrame(data=(euclidean_distances(x_train, x_test)))
     distanceMatrix.insert(0, column="labelTarget", value=y_train)
 
     # Limiting sets size for faster test computing
-    # disabled
+    # disabled by default
     x_train = x_train[:500]
     x_test = x_test[:500]
     y_train = y_train[:500]
@@ -101,19 +106,14 @@ def main():
             dfTemp = distanceMatrix.loc[:, ["labelTarget", i]]
 
             kMinimalPoints = dfTemp.sort_values(by=[i], ascending=True)[:k]
-
             kMinimalPoints["weight"] = 1/kMinimalPoints[i]
             kMinimalPoints = kMinimalPoints[["labelTarget", "weight"]]
-
             kMinimalPoints = kMinimalPoints.groupby(["labelTarget"]).sum()
             kMinimalPoints = kMinimalPoints[kMinimalPoints.weight ==
                                             kMinimalPoints.weight.max()]
-
             kMinimalPoints = kMinimalPoints.reset_index()
             y_pred = np.append(y_pred, kMinimalPoints["labelTarget"])
 
-            # if(i>=5):
-            #     break
         if (targetPresent == True):
             accuracy = calculateAccuracy(y_test, y_pred)
             print(
@@ -123,10 +123,11 @@ def main():
         else:
             print("These are predictions from the model:")
             y_pred = np.array(y_pred)
-            np.savetxt("{k}Value.csv", y_pred, delimiter=",")
+            np.savetxt(f"{k}_K_Value.csv", y_pred, delimiter=",")
     if (targetPresent == False):
-        return(print("Finised program without a target"))
+        return(print("Finised program without a test target set. Results are stored in .csv files"))
 
+    #! Starting a part that plots the accuracy
     plt.figure(dpi=80, figsize=(10, 10))
     # Key of this dict is K value that is specified in task 3
     # Its items are dicts with digits and corresponding accuracy
@@ -144,20 +145,16 @@ def main():
                 signleDigit["y_test"], signleDigit["y_pred"])
 
         finalK_Result[key_K] = accuracyResults
-        # keys  = list(accuracyResults.keys())
-        # vals = [float(accuracyResults[k]) for k in keys]
     finalK_Result = pd.DataFrame.from_dict(finalK_Result)
     finalK_Result
     sns_pp = sns.heatmap(data=finalK_Result)
-    print("\nSaving results as heatmap to : 'sns-heatmap.jpg'")
+    print("\nSaving results as heatmap to : ", saveNameHeatmap)
     plt.savefig(saveNameHeatmap)
 
-    # superBarplot = sns.barplot(x = keys, y = vals)
-    # superBarplot.set_xlabel("digit")
-    # superBarplot.set_ylabel("Accuracy")
-    # plt.show()
-    return(print("Finised program without a target"))
+    return(print("Finised program with a test target set"))
 
 
 print("Starting the program...")
-main()
+
+if __name__ == "__main__":
+    main()

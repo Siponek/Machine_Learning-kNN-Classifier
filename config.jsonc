@@ -1,8 +1,16 @@
 {
     "json_kValues": [
         1,
-        2
+        2,
+        5,
+        10,
+        25,
+        50
     ],
     "json_pathToMNIST": "mnist",
+    "json_pathToTrainLabel": "mnist\\\\train-labels-idx1-ubyte",
+    "json_pathToTrainImages": "mnist\\\\train-images-idx3-ubyte",
+    "json_pathToTestLabel": "mnist\\\\t10k-labels-idx1-ubyte",
+    "json_pathToTestImages": "mnist\\\\t10k-images-idx3-ubyte",
     "json_heatmapName": "sns-heatmap.jpg"
 }
