@@ -54,6 +54,7 @@ def main():
     except Exception as errorCode:
         print(errorCode)
         print("Something is wrong with the xtest set, make sure it follows the naming convention('t10k-images-idx3-ubyte') and the test set is present")
+        exit("Error while loading test data.\nExiting the program")
 
     try:
         y_test = idx2numpy.convert_from_file(pathToTestLabels)
@@ -148,6 +149,8 @@ def main():
     finalK_Result = pd.DataFrame.from_dict(finalK_Result)
     finalK_Result
     sns_pp = sns.heatmap(data=finalK_Result)
+    sns_pp.set_xlabel('K parameter values', fontsize=14)
+    sns_pp.set_ylabel('Recognised digits', fontsize=14)
     print("\nSaving results as heatmap to : ", saveNameHeatmap)
     plt.savefig(saveNameHeatmap)
 
