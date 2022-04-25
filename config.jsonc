@@ -2,9 +2,14 @@
     "json_kValues": [
         1,
         2,
+        3,
+        4,
         5,
         10,
-        25,
+        15,
+        20,
+        30,
+        40,
         50
     ],
     "json_pathToMNIST": "mnist",

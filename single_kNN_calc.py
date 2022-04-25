@@ -91,10 +91,10 @@ def main():
 
     # Limiting sets size for faster test computing
     # disabled by default
-    x_train = x_train[:500]
-    x_test = x_test[:500]
-    y_train = y_train[:500]
-    y_test = y_test[:500]
+    # x_train = x_train[:500]
+    # x_test = x_test[:500]
+    # y_train = y_train[:500]
+    # y_test = y_test[:500]
 
     dictonaryOfY_pred = {}
 
